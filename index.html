@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Mini Clock & Theme Toggle</title>
+  <style>
+    :root{
+      --bg:#f6f7fb; --card:#ffffff; --text:#111827; --muted:#6b7280;
+      --accent:#2563eb;
+    }
+    [data-theme="dark"]{
+      --bg:#0b1220; --card:#071026; --text:#e6eef8; --muted:#9aa6bd; --accent:#60a5fa;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family:Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+      background:linear-gradient(180deg,var(--bg),#ffffff10);
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      padding:24px;
+      color:var(--text);
+    }
+
+    .card{
+      width:320px;
+      padding:20px;
+      border-radius:12px;
+      background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent),var(--card);
+      box-shadow:0 6px 18px rgba(2,6,23,0.12);
+      backdrop-filter: blur(6px);
+      text-align:center;
+    }
+
+    .time{
+      font-size:48px;
+      line-height:1;
+      font-weight:600;
+      letter-spacing: -0.02em;
+      margin:6px 0 4px;
+    }
+
+    .greeting{
+      font-size:14px;
+      color:var(--muted);
+      margin-bottom:16px;
+    }
+
+    .controls{
+      display:flex;
+      gap:8px;
+      justify-content:center;
+      align-items:center;
+    }
+
+    .btn{
+      border:0;
+      padding:8px 12px;
+      border-radius:8px;
+      font-weight:600;
+      cursor:pointer;
+      background:var(--accent);
+      color:white;
+      box-shadow:0 4px 10px rgba(37,99,235,0.2);
+    }
+
+    .small{
+      font-size:12px;
+      padding:6px 10px;
+      background:transparent;
+      color:var(--muted);
+      box-shadow:none;
+    }
+
+    .meta{
+      margin-top:12px;
+      font-size:11px;
+      color:var(--muted);
+    }
+
+    .sr-only{
+      position:absolute;
+      width:1px;
+      height:1px;
+      padding:0;
+      margin:-1px;
+      overflow:hidden;
+      clip:rect(0,0,0,0);
+      white-space:nowrap;
+      border:0;
+    }
+  </style>
+</head>
+<body>
+  <main class="card" id="app" role="application" aria-labelledby="title">
+    <h1 id="title" style="font-size:16px;margin:0">Mini Clock</h1>
+    <div id="time" class="time" aria-live="polite">--:--:--</div>
+    <div id="greeting" class="greeting">Hello — hope you're well.</div>
+
+    <div class="controls">
+      <button id="toggleTheme" class="btn" aria-pressed="false">Toggle theme</button>
+      <button id="toggleSeconds" class="small" aria-pressed="true">Hide seconds</button>
+    </div>
+
+    <div class="meta">Uses your device time. UK spelling enabled.</div>
+  </main>
+
+  <script>
+    (function () {
+      const root = document.documentElement;
+      const app = document.getElementById('app');
+      const timeEl = document.getElementById('time');
+      const greetEl = document.getElementById('greeting');
+      const themeBtn = document.getElementById('toggleTheme');
+      const secBtn = document.getElementById('toggleSeconds');
+
+      // Persist theme preference in sessionStorage (keeps it per-window)
+      const savedTheme = sessionStorage.getItem('theme');
+      if (savedTheme) root.setAttribute('data-theme', savedTheme);
+
+      let showSeconds = true;
+
+      function pad(n){ return String(n).padStart(2,'0'); }
+
+      function updateClock(){
+        const now = new Date();
+        const h = now.getHours();
+        const m = now.getMinutes();
+        const s = now.getSeconds();
+
+        const timeStr = showSeconds
+          ? `${pad(h)}:${pad(m)}:${pad(s)}`
+          : `${pad(h)}:${pad(m)}`;
+
+        timeEl.textContent = timeStr;
+
+        // Greeting based on time
+        let greet = "Hello — hope you're well.";
+        if (h >= 5 && h < 12) greet = "Good morning — have a great start to your day.";
+        else if (h >= 12 && h < 17) greet = "Good afternoon — keep going.";
+        else if (h >= 17 && h < 21) greet = "Good evening — hope you had a nice day.";
+        else greet = "Good night — take care.";
+
+        greetEl.textContent = greet;
+      }
+
+      // Update every 200ms so the seconds toggle feels responsive
+      let timer = setInterval(updateClock, 200);
+      updateClock();
+
+      themeBtn.addEventListener('click', () => {
+        const current = root.getAttribute('data-theme');
+        const next = current === 'dark' ? '' : 'dark';
+        if (next) root.setAttribute('data-theme', next);
+        else root.removeAttribute('data-theme');
+        themeBtn.setAttribute('aria-pressed', String(!!next));
+        sessionStorage.setItem('theme', next || '');
+      });
+
+      secBtn.addEventListener('click', () => {
+        showSeconds = !showSeconds;
+        secBtn.textContent = showSeconds ? 'Hide seconds' : 'Show seconds';
+        secBtn.setAttribute('aria-pressed', String(!showSeconds));
+        updateClock();
+      });
+
+      // Accessibility: keyboard shortcut "T" toggles theme, "S" toggles seconds
+      window.addEventListener('keydown', (e) => {
+        if (e.key.toLowerCase() === 't') themeBtn.click();
+        if (e.key.toLowerCase() === 's') secBtn.click();
+      });
+    })();
+  </script>
+</body>
+</html>
