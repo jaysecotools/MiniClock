@@ -7,15 +7,17 @@
   <style>
     :root{
       --bg:#f6f7fb; --card:#ffffff; --text:#0b1220; --muted:#6b7280; --accent:#2563eb;
+      --clock-face:#ffffff; --clock-stroke:rgba(2,6,23,0.06); --clock-hands:#081228; --clock-ticks:#081228;
     }
     [data-theme="dark"]{
-      --bg:#071026; --card:#071026; --text:#e6eef8; --muted:#9aa6bd; --accent:#60a5fa;
+      --bg:#071026; --card:#0f1b3d; --text:#e6eef8; --muted:#9aa6bd; --accent:#60a5fa;
+      --clock-face:#0f1b3d; --clock-stroke:rgba(255,255,255,0.1); --clock-hands:#e6eef8; --clock-ticks:#e6eef8;
     }
     *{box-sizing:border-box}
     html,body{height:100%}
     body{
       margin:0;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial;
-      background:linear-gradient(180deg,var(--bg),#ffffff10);
+      background:linear-gradient(180deg,var(--bg),var(--card) 50%);
       display:flex;align-items:center;justify-content:center;padding:24px;color:var(--text);
     }
 
@@ -31,7 +33,7 @@
 
     canvas{width:100%;height:100%; display:block}
     .digital{
-      font-size:56px; font-weight:700; letter-spacing:-0.02em;
+      font-size:56px; font-weight:700; letter-spacing:-0.02em; color:var(--text);
     }
     .greeting{font-size:14px;color:var(--muted); margin:10px 0 14px}
 
@@ -39,7 +41,7 @@
     .btn{
       border:0;padding:8px 12px;border-radius:8px;font-weight:600;cursor:pointer;background:var(--accent);color:white;
     }
-    .muted-btn{background:transparent;border:1px solid rgba(15,23,36,0.06);color:var(--muted);padding:8px 12px;border-radius:8px}
+    .muted-btn{background:transparent;border:1px solid var(--clock-stroke);color:var(--muted);padding:8px 12px;border-radius:8px}
     .tiny{font-size:12px;padding:6px 8px}
 
     .meta{margin-top:12px;font-size:11px;color:var(--muted)}
@@ -70,7 +72,6 @@
       <button id="toggleSeconds" class="muted-btn tiny" aria-pressed="true">Hide seconds</button>
     </div>
 
-    <div class="meta">Uses your device time. UK spelling enabled.</div>
   </main>
 
 <script>
@@ -89,6 +90,11 @@
   let mode = 'analogue'; // 'analogue' | 'digital'
   let showSeconds = true;
   const dpr = () => window.devicePixelRatio || 1;
+
+  // Get CSS variable
+  function getCssVar(name) {
+    return getComputedStyle(root).getPropertyValue(name).trim();
+  }
 
   // Responsive sizing (CSS px)
   function cssSize() {
@@ -122,10 +128,10 @@
     // Outer disc + bezel
     ctx.beginPath();
     ctx.arc(cx, cy, radius + 8, 0, Math.PI * 2);
-    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--card').trim() || '#fff';
+    ctx.fillStyle = getCssVar('--clock-face');
     ctx.fill();
     ctx.lineWidth = 1.5;
-    ctx.strokeStyle = 'rgba(2,6,23,0.06)';
+    ctx.strokeStyle = getCssVar('--clock-stroke');
     ctx.stroke();
 
     // Draw ticks: translate to centre to simplify trig math
@@ -146,7 +152,7 @@
       ctx.moveTo(xOuter, yOuter);
       ctx.lineTo(xInner, yInner);
       ctx.lineWidth = lineWidth;
-      ctx.strokeStyle = '#081228';
+      ctx.strokeStyle = getCssVar('--clock-ticks');
       ctx.lineCap = 'round';
       ctx.stroke();
     }
@@ -164,23 +170,23 @@
     ctx.beginPath();
     ctx.lineWidth = 6;
     ctx.lineCap = 'round';
-    rotateAndDraw((hval / 12) * Math.PI * 2, 0, -radius * 0.5, '#081228');
+    rotateAndDraw((hval / 12) * Math.PI * 2, 0, -radius * 0.5, getCssVar('--clock-hands'));
 
     // minute hand
     ctx.beginPath();
     ctx.lineWidth = 4;
-    rotateAndDraw((m / 60) * Math.PI * 2, 0, -radius * 0.72, '#081228');
+    rotateAndDraw((m / 60) * Math.PI * 2, 0, -radius * 0.72, getCssVar('--clock-hands'));
 
     // second hand (optional)
     if (showSeconds) {
       ctx.beginPath();
       ctx.lineWidth = 2;
-      rotateAndDraw((s / 60) * Math.PI * 2, 0, -radius * 0.85, getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#2563eb');
+      rotateAndDraw((s / 60) * Math.PI * 2, 0, -radius * 0.85, getCssVar('--accent'));
     }
 
     // centre pin
     ctx.beginPath();
-    ctx.fillStyle = '#081228';
+    ctx.fillStyle = getCssVar('--clock-hands');
     ctx.arc(0, 0, 6, 0, Math.PI * 2);
     ctx.fill();
 
@@ -250,6 +256,9 @@
     // theme restore (session)
     const savedTheme = sessionStorage.getItem('theme');
     if (savedTheme) root.setAttribute('data-theme', savedTheme);
+
+    // Update button states based on initial theme
+    themeBtn.setAttribute('aria-pressed', String(!!savedTheme));
 
     // button handlers
     themeBtn.addEventListener('click', () => {
